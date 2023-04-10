@@ -151,7 +151,7 @@ func (r *Repository) GetTransactions(userID string) (tr []model.Transaction, err
 }
 
 func (r *Repository) GetTransactionById(id string) (tr model.Transaction, err error) {
-	err = r.Connection.Where("id = ?").Find(&tr).Error
+	err = r.Connection.Where("id = ?", id).Find(&tr).Error
 	if err != nil {
 		r.Logger.Error(err)
 		return model.Transaction{}, err

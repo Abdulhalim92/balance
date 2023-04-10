@@ -72,7 +72,6 @@ func (s *Service) CreateAuth(userID string, td *model.TokenDetails) error {
 }
 
 func (s *Service) DeleteAuth(givenUuid string) (int64, error) {
-	// var client *redis.Client
 
 	deleted, err := s.Redis.Del(givenUuid).Result()
 	if err != nil {

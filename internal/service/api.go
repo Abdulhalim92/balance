@@ -86,14 +86,20 @@ func (s *Service) GetTransactionById(id string) (model.Transaction, error) {
 	return tr, nil
 }
 
-func (s *Service) GetReports(rep *model.Report) ([]model.Transaction, error) {
+func (s *Service) GetReports(userID string, rep *model.Report) (*excelize.File, error) {
 	tr, err := s.Repository.GetReports(rep)
 	if err != nil {
 		s.Logger.Error(err)
 		return nil, err
 	}
 
-	s.GetExcelReports(tr)
+	excelReports, err := s.GetExcelReports(userID, tr)
+	if err != nil {
+		s.Logger.Error(err)
+		return nil, err
+	}
+
+	return excelReports, nil
 }
 
 func (s *Service) GetExcelReports(userID string, tr []model.Transaction) (*excelize.File, error) {

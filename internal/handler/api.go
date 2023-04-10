@@ -3,6 +3,7 @@ package handler
 import (
 	"balance/internal/apperror"
 	"balance/internal/model"
+	"bytes"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
@@ -11,6 +12,16 @@ import (
 
 func (h *Handler) CreateAccount(c *gin.Context) {
 	var a *model.Account
+
+	userId, ok := c.Get("user_id")
+	if !ok {
+		h.Logger.Error("cannot to get user ID from token")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	userID := userId.(string)
+
+	a.UserID = userID
 
 	if err := c.ShouldBindJSON(&a); err != nil {
 		h.Logger.Error(err)
@@ -42,16 +53,15 @@ func (h *Handler) CreateAccount(c *gin.Context) {
 }
 
 func (h *Handler) GetAccounts(c *gin.Context) {
-	var a *model.Account
-
-	err := c.ShouldBindJSON(&a)
-	if err != nil {
-		h.Logger.Error(err)
-		c.JSON(http.StatusBadRequest, apperror.ErrBadRequest)
+	userId, ok := c.Get("user_id")
+	if !ok {
+		h.Logger.Error("cannot to get user ID from token")
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
+	userID := userId.(string)
 
-	accounts, err := h.Service.GetAccounts(a.UserID)
+	accounts, err := h.Service.GetAccounts(userID)
 	if err != nil {
 		h.Logger.Error(err)
 		c.JSON(http.StatusInternalServerError, apperror.ErrInternalServer)
@@ -64,16 +74,15 @@ func (h *Handler) GetAccounts(c *gin.Context) {
 func (h *Handler) GetAccountById(c *gin.Context) {
 	id := c.Query("id")
 
-	var a *model.Account
-
-	err := c.ShouldBindJSON(&a)
-	if err != nil {
-		h.Logger.Error(err)
-		c.JSON(http.StatusBadRequest, apperror.ErrBadRequest)
+	userId, ok := c.Get("user_id")
+	if !ok {
+		h.Logger.Error("cannot to get user ID from token")
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
+	userID := userId.(string)
 
-	account, err := h.Service.GetAccountById(a.UserID, id)
+	account, err := h.Service.GetAccountById(userID, id)
 	if err != nil {
 		h.Logger.Error(err)
 		c.JSON(http.StatusInternalServerError, apperror.ErrInternalServer)
@@ -85,6 +94,16 @@ func (h *Handler) GetAccountById(c *gin.Context) {
 
 func (h *Handler) UpdateAccount(c *gin.Context) {
 	var a *model.Account
+
+	userId, ok := c.Get("user_id")
+	if !ok {
+		h.Logger.Error("cannot to get user ID from token")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	userID := userId.(string)
+
+	a.UserID = userID
 
 	err := c.ShouldBindJSON(&a)
 	if err != nil {
@@ -106,6 +125,14 @@ func (h *Handler) UpdateAccount(c *gin.Context) {
 func (h *Handler) CreateTransaction(c *gin.Context) {
 	var tr *model.Transaction
 
+	userId, ok := c.Get("user_id")
+	if !ok {
+		h.Logger.Error("cannot to get user ID from token")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	userID := userId.(string)
+
 	err := c.ShouldBindJSON(&tr)
 	if err != nil {
 		h.Logger.Error(err)
@@ -118,21 +145,19 @@ func (h *Handler) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	err = h.Service.CreateTransaction(tr)
-	if err != nil {
-		h.Logger.Error(err)
-		c.JSON(http.StatusInternalServerError, apperror.ErrInternalServer)
-		return
-	}
-
-	userID, err := h.Service.Repository.GetUserIdByAccountID(tr.AccountID)
-	if err != nil {
-		h.Logger.Error(err)
-		c.JSON(http.StatusInternalServerError, apperror.ErrInternalServer)
-		return
-	}
-
 	account, err := h.Service.GetAccountById(userID, tr.AccountID)
+	if err != nil {
+		h.Logger.Error(err)
+		c.JSON(http.StatusInternalServerError, apperror.ErrInternalServer)
+		return
+	}
+	if account.ID == "" {
+		h.Logger.Errorf("this user doesn't have an account with id %s", tr.AccountID)
+		c.JSON(http.StatusBadRequest, apperror.ErrBadRequest)
+		return
+	}
+
+	err = h.Service.CreateTransaction(tr)
 	if err != nil {
 		h.Logger.Error(err)
 		c.JSON(http.StatusInternalServerError, apperror.ErrInternalServer)
@@ -156,48 +181,44 @@ func (h *Handler) CreateTransaction(c *gin.Context) {
 }
 
 func (h *Handler) GetTransactions(c *gin.Context) {
-	var tr *model.Transaction
+	var tr []model.Transaction
 
-	err := c.ShouldBindJSON(&tr)
-	if err != nil {
-		h.Logger.Error(err)
-		c.JSON(http.StatusBadRequest, apperror.ErrBadRequest)
+	userId, ok := c.Get("user_id")
+	if !ok {
+		h.Logger.Error("cannot to get user ID from token")
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
+	userID := userId.(string)
 
-	//userID, err := h.Service.Repository.GetUserIdByAccountID(tr.AccountID)
-	//if err != nil {
-	//	h.Logger.Error(err)
-	//	c.JSON(http.StatusInternalServerError, apperror.ErrInternalServer)
-	//	return
-	//}
-
-	transactions, err := h.Service.GetTransactions(tr.AccountID)
+	accounts, err := h.Service.GetAccounts(userID)
 	if err != nil {
 		h.Logger.Error(err)
 		c.JSON(http.StatusInternalServerError, apperror.ErrInternalServer)
 		return
 	}
 
-	c.JSON(http.StatusOK, transactions)
+	for _, account := range accounts {
+		transactions, err := h.Service.GetTransactions(account.ID)
+		if err != nil {
+			h.Logger.Error(err)
+			c.JSON(http.StatusInternalServerError, apperror.ErrInternalServer)
+			return
+		}
+
+		tr = append(tr, transactions...)
+	}
+
+	c.JSON(http.StatusOK, tr)
 }
 
 func (h *Handler) GetTransactionById(c *gin.Context) {
 	id := c.Query("id")
 
-	var tr *model.Transaction
-
-	err := c.ShouldBindJSON(&tr)
-	if err != nil {
-		h.Logger.Error(err)
-		c.JSON(http.StatusBadRequest, apperror.ErrBadRequest)
-		return
-	}
-
-	userID, err := h.Service.Repository.GetUserIdByAccountID(tr.AccountID)
-	if err != nil {
-		h.Logger.Error(err)
-		c.JSON(http.StatusInternalServerError, apperror.ErrInternalServer)
+	userId, ok := c.Get("user_id")
+	if !ok {
+		h.Logger.Error("cannot to get user ID from token")
+		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
 
@@ -208,11 +229,31 @@ func (h *Handler) GetTransactionById(c *gin.Context) {
 		return
 	}
 
+	account, err := h.Service.GetAccountInfoById(transaction.AccountID)
+	if err != nil {
+		h.Logger.Error(err)
+		c.JSON(http.StatusInternalServerError, apperror.ErrInternalServer)
+		return
+	}
+	if account.UserID != userId {
+		h.Logger.Error("this transaction doesn't belong to user")
+		c.JSON(http.StatusBadRequest, apperror.ErrBadRequest)
+		return
+	}
+
 	c.JSON(http.StatusOK, transaction)
 }
 
 func (h *Handler) GetReports(c *gin.Context) {
 	var rep *model.Report
+
+	userId, ok := c.Get("user_id")
+	if !ok {
+		h.Logger.Error("cannot to get user ID from token")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	userID := userId.(string)
 
 	err := c.ShouldBindJSON(&rep)
 	if err != nil {
@@ -243,5 +284,23 @@ func (h *Handler) GetReports(c *gin.Context) {
 	rep.From = from
 	rep.To = to
 
-	h.Service.GetReports(rep)
+	reports, err := h.Service.GetReports(userID, rep)
+	if err != nil {
+		h.Logger.Error(err)
+		c.JSON(http.StatusInternalServerError, apperror.ErrInternalServer)
+		return
+	}
+
+	// Сохраняем файл в буфер
+	buffer := new(bytes.Buffer)
+	err = reports.Write(buffer)
+	if err != nil {
+		h.Logger.Error(err)
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	// Отправляем файл клиенту
+	c.Header("Content-Disposition", "attachment; filename=example.xlsx")
+	c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", buffer.Bytes())
 }
