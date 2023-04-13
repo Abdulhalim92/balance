@@ -52,8 +52,8 @@ type Report struct {
 	ID        string    `gorm:"type:uuid;default:uuid_generate_v4()"`
 	AccountID string    `json:"account_id,omitempty"`
 	Type      string    `json:"type,omitempty"`
-	Limit     int64     `json:"limit,omitempty"`
-	Page      int64     `json:"page,omitempty"`
+	Limit     int       `json:"limit,omitempty"`
+	Page      int       `json:"page,omitempty"`
 	DateFrom  string    `json:"date_from,omitempty"`
 	DateTo    string    `json:"date_to,omitempty"`
 	From      time.Time `json:"-"`

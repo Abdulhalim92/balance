@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"gorm.io/gorm"
+	"time"
 )
 
 type Repository struct {
@@ -161,11 +162,38 @@ func (r *Repository) GetTransactionById(id string) (tr model.Transaction, err er
 }
 
 func (r *Repository) GetReports(rep *model.Report) (tr []model.Transaction, err error) {
-	if rep.AccountID == "" {
-		if rep.Type == "" {
-			// TODO
-		}
+	query := r.Connection
+	if rep.Type != "" {
+		query = query.Where("type = ?", rep.Type)
 	}
+	if rep.From != (time.Time{}) {
+		query = query.Where("created >= ?", rep.From)
+	}
+	if rep.To != (time.Time{}) {
+		query = query.Where("created <= ?", rep.To)
+	}
+
+	page := 1
+	limit := 0
+
+	if rep.Page > 0 {
+		page = rep.Page
+	}
+	if rep.Limit > 0 {
+		limit = rep.Limit
+	}
+
+	if rep.Page > 0 {
+		query = query.Limit(limit).Offset((page - 1) * limit)
+	}
+
+	err = query.Find(&tr).Error
+	if err != nil {
+		r.Logger.Error(err)
+		return nil, err
+	}
+
+	return tr, nil
 }
 
 func (r *Repository) GetInfoByUserId(userID string) (u *model.User, err error) {
