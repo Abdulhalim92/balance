@@ -29,13 +29,13 @@ type Token struct {
 }
 
 type Account struct {
-	ID      string  `gorm:"type:uuid;default:uuid_generate_v4()"`
-	Number  string  `json:"number"`
-	UserID  string  `json:"user_id"`
-	Balance float64 `json:"balance"`
-	Created time.Time
-	Updated time.Time
-	Deleted time.Time
+	ID      string    `gorm:"type:uuid;default:uuid_generate_v4()"`
+	Number  string    `json:"number"`
+	UserID  string    `json:"user_id,omitempty"`
+	Balance float64   `json:"balance"`
+	Created time.Time `json:"created,omitempty"`
+	Updated time.Time `json:"updated,omitempty"`
+	Deleted time.Time `json:"deleted,omitempty"`
 }
 
 type Transaction struct {

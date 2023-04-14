@@ -21,13 +21,13 @@ func (h *Handler) CreateAccount(c *gin.Context) {
 	}
 	userID := userId.(string)
 
-	a.UserID = userID
-
 	if err := c.ShouldBindJSON(&a); err != nil {
 		h.Logger.Error(err)
 		c.JSON(http.StatusBadRequest, apperror.ErrBadRequest)
 		return
 	}
+
+	a.UserID = userID
 
 	// проверка счета пользователя на дубликат
 	existsAccount, err := h.Service.ExistsAccount(a.Number)
@@ -139,7 +139,8 @@ func (h *Handler) CreateTransaction(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, apperror.ErrBadRequest)
 		return
 	}
-	if (tr.Type != "expense") || (tr.Type != "income") {
+	ok = tr.Type == "expense" || tr.Type == "income"
+	if !ok {
 		h.Logger.Error(fmt.Errorf("incorrect transation type"))
 		c.JSON(http.StatusBadRequest, apperror.ErrBadRequest)
 		return

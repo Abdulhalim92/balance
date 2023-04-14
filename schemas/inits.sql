@@ -4,9 +4,9 @@ CREATE TABLE users
     username TEXT NOT NULL,
     password TEXT NOT NULL,
     phone TEXT NOT NULL,
-    created_at timestamptz NOT NULL DEFAULT current_timestamp,
-    updated_at timestamptz,
-    deleted_at timestamptz
+    created timestamptz NOT NULL DEFAULT current_timestamp,
+    updated timestamptz,
+    deleted timestamptz
 );
 
 CREATE TABLE tokens
@@ -22,9 +22,9 @@ CREATE TABLE accounts
     user_id UUID NOT NULL
         REFERENCES users ON DELETE CASCADE,
     balance DECIMAL NOT NULL DEFAULT 0.0,
-    created_at timestamptz NOT NULL DEFAULT current_timestamp,
-    updated_at timestamptz,
-    deleted_at timestamptz
+    created timestamptz NOT NULL DEFAULT current_timestamp,
+    updated timestamptz,
+    deleted timestamptz
 );
 
 CREATE TABLE transactions
@@ -34,7 +34,7 @@ CREATE TABLE transactions
         REFERENCES accounts ON DELETE CASCADE,
     type TEXT NOT NULL,
     amount DECIMAL NOT NULL DEFAULT 0.0,
-    created_at timestamptz NOT NULL DEFAULT current_timestamp,
-    updated_at timestamptz,
-    deleted_at timestamptz
+    created timestamptz NOT NULL DEFAULT current_timestamp,
+    updated timestamptz,
+    deleted timestamptz
 );

@@ -41,6 +41,6 @@ func (h *Handler) Init() {
 		api.POST("/transaction", h.CreateTransaction)
 		api.GET("/transaction", h.GetTransactions)
 		api.GET("/transaction/:id", h.GetTransactionById)
-		api.GET("/excel-reports", h.GetReports)
+		api.POST("/excel-reports", h.GetReports)
 	}
 }
