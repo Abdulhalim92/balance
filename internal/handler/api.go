@@ -262,24 +262,29 @@ func (h *Handler) GetReports(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, apperror.ErrBadRequest)
 		return
 	}
-	if (rep.Type != "expense") || (rep.Type != "income") {
+	if (rep.Type != "") && (rep.Type != "expense") && (rep.Type != "income") {
 		h.Logger.Error(fmt.Errorf("incorrect transation type"))
 		c.JSON(http.StatusBadRequest, apperror.ErrBadRequest)
 		return
 	}
 
-	from, err := time.Parse("02-01-2006", rep.DateFrom)
-	if err != nil {
-		h.Logger.Error(err)
-		c.JSON(http.StatusBadRequest, apperror.ErrBadRequest)
-		return
+	from := time.Time{}
+	to := time.Time{}
+	if rep.DateFrom != "" {
+		from, err = time.Parse("02-01-2006", rep.DateFrom)
+		if err != nil {
+			h.Logger.Error(err)
+			c.JSON(http.StatusBadRequest, apperror.ErrBadRequest)
+			return
+		}
 	}
-
-	to, err := time.Parse("02-01-2006", rep.DateTo)
-	if err != nil {
-		h.Logger.Error(err)
-		c.JSON(http.StatusBadRequest, apperror.ErrBadRequest)
-		return
+	if rep.DateFrom != "" {
+		to, err = time.Parse("02-01-2006", rep.DateTo)
+		if err != nil {
+			h.Logger.Error(err)
+			c.JSON(http.StatusBadRequest, apperror.ErrBadRequest)
+			return
+		}
 	}
 
 	rep.From = from
